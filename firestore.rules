@@ -1,0 +1,125 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && 
+             request.auth.token.email == "junjie050506@gmail.com";
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation Blueprints
+    function isValidUserProfile(data) {
+      return (data.checklist is list || !data.keys().hasAny(['checklist'])) &&
+             (data.language is string && data.language.size() <= 10 || !data.keys().hasAny(['language'])) &&
+             (data.isDarkMode is bool || !data.keys().hasAny(['isDarkMode']));
+    }
+
+    function isValidBroadcastAlert(data) {
+      return data.keys().hasAll(['zone', 'type', 'message', 'status', 'admin_id']) &&
+             data.zone is string && data.zone.size() <= 100 &&
+             data.type is string && data.type.size() <= 100 &&
+             data.message is string && data.message.size() <= 1000 &&
+             data.status is string && data.status.size() <= 50 &&
+             data.admin_id is string && data.admin_id.size() <= 128;
+    }
+
+    function isValidHazard(data) {
+      return data.keys().hasAll(['zone', 'type', 'severity', 'description', 'x', 'y', 'reporter_id']) &&
+             data.zone is string && data.zone.size() <= 100 &&
+             data.type is string && data.type.size() <= 100 &&
+             data.severity is string && data.severity.size() <= 50 &&
+             data.description is string && data.description.size() <= 1000 &&
+             data.x is number && data.y is number &&
+             data.reporter_id is string && data.reporter_id.size() <= 128;
+    }
+
+    function isValidCommunityPost(data) {
+      return data.keys().hasAll(['text', 'authorId', 'authorName', 'zone']) &&
+             data.text is string && data.text.size() <= 5000 &&
+             (data.image == null || data.image is string && data.image.size() <= 3000000 || !data.keys().hasAny(['image'])) &&
+             data.authorId is string && data.authorId.size() <= 128 &&
+             data.authorName is string && data.authorName.size() <= 100 &&
+             data.zone is string && data.zone.size() <= 100;
+    }
+
+    function isValidSosRequest(data) {
+      return data.keys().hasAll(['zone', 'lat', 'lon', 'status', 'userId']) &&
+             data.zone is string && data.zone.size() <= 100 &&
+             data.lat is number && data.lon is number &&
+             data.status is string && data.status.size() <= 50 &&
+             data.userId is string && data.userId.size() <= 128;
+    }
+
+    function isValidShelter(data) {
+      return data.keys().hasAll(['isFull']) &&
+             data.isFull is bool;
+    }
+
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    match /artifacts/{appId} {
+      // User profiles subcollection
+      match /users/{userId}/profile/{docId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidUserProfile(incoming());
+        allow delete: if isOwner(userId);
+      }
+
+      // Public data nested subcollection details
+      match /public/data/broadcast_alerts/{alertId} {
+        allow read: if true;
+        allow create: if (isAdmin() || isSignedIn()) && isValidBroadcastAlert(incoming());
+        allow update, delete: if (isAdmin() || isSignedIn());
+      }
+
+      match /public/data/hazards/{hazardId} {
+        allow read: if true;
+        allow create: if isSignedIn() && isValidHazard(incoming()) && incoming().reporter_id == request.auth.uid;
+        allow update, delete: if (isAdmin() || (isSignedIn() && existing().reporter_id == request.auth.uid));
+      }
+
+      match /public/data/community_posts/{postId} {
+        allow read: if true;
+        allow create: if isSignedIn() && isValidCommunityPost(incoming()) && incoming().authorId == request.auth.uid;
+        allow update, delete: if (isAdmin() || (isSignedIn() && existing().authorId == request.auth.uid));
+      }
+
+      match /public/data/sos_requests/{sosId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn() && isValidSosRequest(incoming()) && incoming().userId == request.auth.uid;
+        allow update: if isSignedIn() && (
+                        isAdmin() || 
+                        existing().userId == request.auth.uid || 
+                        incoming().volunteerId == request.auth.uid ||
+                        existing().volunteerId == request.auth.uid
+                      );
+        allow delete: if (isAdmin() || isSignedIn());
+      }
+
+      match /public/data/shelters/{shelterId} {
+        allow read: if true;
+        allow create, update, delete: if (isSignedIn() || isAdmin());
+      }
+    }
+  }
+}

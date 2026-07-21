@@ -1,0 +1,122 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "User preferences and emergency checklist packages.",
+      "type": "object",
+      "properties": {
+        "checklist": {
+          "type": "array",
+          "description": "List of checked emergency item structures."
+        },
+        "language": {
+          "type": "string",
+          "description": "User chosen UI language (en, ms, cn)."
+        },
+        "isDarkMode": {
+          "type": "boolean",
+          "description": "Dark mode styling theme preference."
+        }
+      }
+    },
+    "BroadcastAlert": {
+      "title": "Broadcast Alert",
+      "description": "Broadcasting critical emergency info from command center.",
+      "type": "object",
+      "properties": {
+        "zone": { "type": "string" },
+        "type": { "type": "string" },
+        "message": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "status": { "type": "string" },
+        "admin_id": { "type": "string" }
+      },
+      "required": ["zone", "type", "message", "timestamp", "status", "admin_id"]
+    },
+    "Hazard": {
+      "title": "Hazard",
+      "description": "Citizen filed hazard report location overlay.",
+      "type": "object",
+      "properties": {
+        "zone": { "type": "string" },
+        "type": { "type": "string" },
+        "severity": { "type": "string" },
+        "description": { "type": "string" },
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "reporter_id": { "type": "string" }
+      },
+      "required": ["zone", "type", "severity", "description", "x", "y", "timestamp", "reporter_id"]
+    },
+    "CommunityPost": {
+      "title": "Community Post",
+      "description": "Citizen public board query update entries.",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "image": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "zone": { "type": "string" }
+      },
+      "required": ["text", "authorId", "authorName", "timestamp", "zone"]
+    },
+    "SosRequest": {
+      "title": "Sos Request",
+      "description": "Emergency high-priority beacon response flow.",
+      "type": "object",
+      "properties": {
+        "zone": { "type": "string" },
+        "lat": { "type": "number" },
+        "lon": { "type": "number" },
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "status": { "type": "string" },
+        "userId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "dispatchedAt": { "type": "string", "format": "date-time" },
+        "volunteerId": { "type": "string" },
+        "acceptedAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["zone", "lat", "lon", "status", "userId", "timestamp"]
+    },
+    "Shelter": {
+      "title": "Shelter",
+      "description": "Dynamic capacity statuses overlay for shelters.",
+      "type": "object",
+      "properties": {
+        "isFull": { "type": "boolean" }
+      },
+      "required": ["isFull"]
+    }
+  },
+  "firestore": {
+    "/artifacts/{appId}/users/{userId}/profile/{docId}": {
+      "schema": "UserProfile",
+      "description": "Saves specific user state configuration details."
+    },
+    "/artifacts/{appId}/public/data/broadcast_alerts/{alertId}": {
+      "schema": "BroadcastAlert",
+      "description": "Saves incoming emergency broadcasts alerts."
+    },
+    "/artifacts/{appId}/public/data/hazards/{hazardId}": {
+      "schema": "Hazard",
+      "description": "Saves citizen submitted hazard listings details."
+    },
+    "/artifacts/{appId}/public/data/community_posts/{postId}": {
+      "schema": "CommunityPost",
+      "description": "Saves public neighborhood community post records."
+    },
+    "/artifacts/{appId}/public/data/sos_requests/{sosId}": {
+      "schema": "SosRequest",
+      "description": "Saves life safety SOS emergency beacons tracking."
+    },
+    "/artifacts/{appId}/public/data/shelters/{shelterId}": {
+      "schema": "Shelter",
+      "description": "Dynamic occupancy overrides mapping for designated PPS shelters."
+    }
+  }
+}
